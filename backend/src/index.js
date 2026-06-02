@@ -1,12 +1,19 @@
 require("dotenv").config();
 
 const express = require("express");
+const cors = require("cors");
 const connectDB = require("./config/db");
+const { loggerMiddleware, requestTimeMiddleware } = require("./middlewares/loggerMiddleware");
+const { errorHandler, notFound } = require("./middlewares/errorMiddleware");
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
+// Global Middlewares
+app.use(cors());
 app.use(express.json());
+app.use(loggerMiddleware);
+app.use(requestTimeMiddleware);
 
 app.get("/", (req, res) => {
   res.status(200).json({
@@ -23,6 +30,10 @@ app.get("/health", (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// Error Handling Middlewares
+app.use(notFound);
+app.use(errorHandler);
 
 const startServer = async () => {
   try {
