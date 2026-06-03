@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const User = require("../models/userModel");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
@@ -109,10 +110,114 @@ const updateProfile = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "Profile updated successfully"));
 });
 
+const changePassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  const user = await User.findById(req.user?._id);
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+
+  if (!isPasswordCorrect) {
+    throw new ApiError(401, "Invalid old password");
+  }
+
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password changed successfully"));
+});
+
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const token = crypto.randomBytes(20).toString("hex");
+  user.forgotPasswordToken = token;
+  user.forgotPasswordExpiry = Date.now() + 3600000; // 1 hour
+  await user.save({ validateBeforeSave: false });
+
+  // Placeholder: In a real app, send email here
+  console.log(`[DEV ONLY] Reset Link: http://localhost:5000/api/v1/auth/reset-password/${token}`);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { token }, "Password reset link generated (see console in dev)"));
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const { newPassword } = req.body;
+
+  const user = await User.findOne({
+    forgotPasswordToken: token,
+    forgotPasswordExpiry: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    throw new ApiError(400, "Invalid or expired token");
+  }
+
+  user.password = newPassword;
+  user.forgotPasswordToken = undefined;
+  user.forgotPasswordExpiry = undefined;
+  await user.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password reset successfully"));
+});
+
+const sendOTP = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user?._id);
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  user.emailVerificationToken = otp;
+  user.emailVerificationExpiry = Date.now() + 600000; // 10 mins
+  await user.save({ validateBeforeSave: false });
+
+  console.log(`[DEV ONLY] OTP for ${user.email}: ${otp}`);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "OTP sent successfully (see console in dev)"));
+});
+
+const verifyOTP = asyncHandler(async (req, res) => {
+  const { otp } = req.body;
+  const user = await User.findOne({
+    _id: req.user?._id,
+    emailVerificationToken: otp,
+    emailVerificationExpiry: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    throw new ApiError(400, "Invalid or expired OTP");
+  }
+
+  user.isVerified = true;
+  user.emailVerificationToken = undefined;
+  user.emailVerificationExpiry = undefined;
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Email verified successfully"));
+});
+
 module.exports = {
   registerUser,
   loginUser,
   logoutUser,
   getCurrentUser,
   updateProfile,
+  changePassword,
+  forgotPassword,
+  resetPassword,
+  sendOTP,
+  verifyOTP,
 };
