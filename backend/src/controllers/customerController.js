@@ -2,6 +2,7 @@ const customerService = require("../services/customerService");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiResponse = require("../utils/ApiResponse");
 const { getPaginationOptions, getPaginationMetadata } = require("../utils/pagination");
+const buildCustomerFilter = require("../utils/filterBuilder");
 
 const createCustomer = asyncHandler(async (req, res) => {
   const customer = await customerService.createCustomer(req.body);
@@ -13,12 +14,7 @@ const createCustomer = asyncHandler(async (req, res) => {
 const getAllCustomers = asyncHandler(async (req, res) => {
   const { page, limit, skip } = getPaginationOptions(req.query);
   
-  // Basic filtering logic (can be expanded in Part 14)
-  const filter = {};
-  if (req.query.country) filter.country = req.query.country;
-  if (req.query.city) filter.city = req.query.city;
-  if (req.query.gender) filter.gender = req.query.gender;
-  if (req.query.churned !== undefined) filter.churned = req.query.churned === 'true';
+  const filter = buildCustomerFilter(req.query);
 
   const { customers, total } = await customerService.getAllCustomers({
     filter,
@@ -152,6 +148,33 @@ const getCustomersBySegment = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { customers, pagination: metadata }, `Segment: ${segment} fetched`));
 });
 
+const getCustomersByAnalytics = asyncHandler(async (req, res) => {
+  const { field } = req.params;
+  const { min, max } = req.query;
+  const { page, limit, skip } = getPaginationOptions(req.query);
+
+  const filter = {};
+  const range = {};
+  
+  if (min !== undefined) range.$gte = Number(min);
+  if (max !== undefined) range.$lte = Number(max);
+  
+  if (Object.keys(range).length > 0) {
+    filter[field] = range;
+  }
+
+  const { customers, total } = await customerService.getAllCustomers({
+    filter,
+    skip,
+    limit,
+  });
+
+  const metadata = getPaginationMetadata(page, limit, total);
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { customers, pagination: metadata }, `Analytics for ${field} fetched`));
+});
+
 module.exports = {
   createCustomer,
   getAllCustomers,
@@ -165,4 +188,5 @@ module.exports = {
   getCustomersByField,
   getCustomersByStatus,
   getCustomersBySegment,
+  getCustomersByAnalytics,
 };

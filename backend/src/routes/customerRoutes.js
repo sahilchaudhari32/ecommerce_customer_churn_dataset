@@ -17,6 +17,7 @@ router.delete("/bulk-delete", customerController.bulkDeleteCustomers);
 router.get("/status/:status", customerController.getCustomersByStatus);
 router.get("/segment/:segment", customerController.getCustomersBySegment);
 router.get("/field/:field/:value", customerController.getCustomersByField);
+router.get("/analytics/:field", customerController.getCustomersByAnalytics);
 
 router
   .route("/")
