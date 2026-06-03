@@ -236,6 +236,47 @@ const searchCustomers = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { customers, pagination: metadata }, `Search results for: ${q} fetched`));
 });
 
+const getFilteredCustomers = asyncHandler(async (req, res) => {
+  const { filterType } = req.params;
+  const { page, limit, skip, sort } = getPaginationOptions(req.query);
+  
+  let filter = { isDeleted: false };
+  switch (filterType) {
+    case 'high-session':
+      filter.sessionDurationAvg = { $gt: 60 };
+      break;
+    case 'low-session':
+      filter.sessionDurationAvg = { $lt: 10 };
+      break;
+    case 'high-order-value':
+      filter.averageOrderValue = { $gt: 200 };
+      break;
+    case 'loyal':
+      filter.membershipYears = { $gte: 3 };
+      break;
+    case 'active':
+      filter.churned = false;
+      break;
+    case 'engaged':
+      filter.socialMediaEngagementScore = { $gte: 70 };
+      break;
+    default:
+      throw new ApiError(400, "Invalid filter type");
+  }
+
+  const { customers, total } = await customerService.getAllCustomers({
+    filter,
+    skip,
+    limit,
+    sort,
+  });
+
+  const metadata = getPaginationMetadata(page, limit, total);
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { customers, pagination: metadata }, `Filter: ${filterType} fetched`));
+});
+
 module.exports = {
   createCustomer,
   getAllCustomers,
@@ -252,4 +293,5 @@ module.exports = {
   getCustomersByAnalytics,
   getSortedCustomers,
   searchCustomers,
+  getFilteredCustomers,
 };
