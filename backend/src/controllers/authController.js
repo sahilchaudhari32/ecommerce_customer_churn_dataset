@@ -73,7 +73,46 @@ const loginUser = asyncHandler(async (req, res) => {
   );
 });
 
+const logoutUser = asyncHandler(async (req, res) => {
+  // Logic to invalidate token on server-side would go here if using a whitelist
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "User logged out successfully"));
+});
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "User profile fetched successfully"));
+});
+
+const updateProfile = asyncHandler(async (req, res) => {
+  const { username, email } = req.body;
+
+  if (!username && !email) {
+    throw new ApiError(400, "Nothing to update");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        username: username || req.user.username,
+        email: email || req.user.email,
+      },
+    },
+    { new: true }
+  ).select("-password ");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Profile updated successfully"));
+});
+
 module.exports = {
   registerUser,
   loginUser,
+  logoutUser,
+  getCurrentUser,
+  updateProfile,
 };
