@@ -2,11 +2,29 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
+const xss = require("xss-clean");
+const hpp = require("hpp");
+const rateLimit = require("express-rate-limit");
 const connectDB = require("./config/db");
 const { loggerMiddleware, requestTimeMiddleware } = require("./middlewares/loggerMiddleware");
 const { errorHandler, notFound } = require("./middlewares/errorMiddleware");
 
 const app = express();
+
+// Security Middlewares
+app.use(helmet());
+app.use(xss());
+app.use(hpp());
+
+// Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: "Too many requests from this IP, please try again after 15 minutes",
+});
+app.use("/api", limiter);
+
 const PORT = Number(process.env.PORT) || 5000;
 
 // Global Middlewares
