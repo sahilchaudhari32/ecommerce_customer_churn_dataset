@@ -36,9 +36,11 @@ app.use(requestTimeMiddleware);
 // Routes
 const customerRoutes = require("./routes/customerRoutes");
 const authRoutes = require("./routes/authRoutes");
+const statsRoutes = require("./routes/statsRoutes");
 
 app.use("/api/v1/customers", customerRoutes);
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/analytics", statsRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({
