@@ -3,7 +3,6 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
-const xss = require("xss-clean");
 const hpp = require("hpp");
 const rateLimit = require("express-rate-limit");
 const connectDB = require("./config/db");
@@ -14,7 +13,6 @@ const app = express();
 
 // Security Middlewares
 app.use(helmet());
-app.use(xss());
 app.use(hpp());
 
 // Rate Limiting
