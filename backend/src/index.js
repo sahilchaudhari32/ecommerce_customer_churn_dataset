@@ -2,11 +2,27 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
+const hpp = require("hpp");
+const rateLimit = require("express-rate-limit");
 const connectDB = require("./config/db");
 const { loggerMiddleware, requestTimeMiddleware } = require("./middlewares/loggerMiddleware");
 const { errorHandler, notFound } = require("./middlewares/errorMiddleware");
 
 const app = express();
+
+// Security Middlewares
+app.use(helmet());
+app.use(hpp());
+
+// Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: "Too many requests from this IP, please try again after 15 minutes",
+});
+app.use("/api", limiter);
+
 const PORT = Number(process.env.PORT) || 5000;
 
 // Global Middlewares
@@ -18,9 +34,11 @@ app.use(requestTimeMiddleware);
 // Routes
 const customerRoutes = require("./routes/customerRoutes");
 const authRoutes = require("./routes/authRoutes");
+const statsRoutes = require("./routes/statsRoutes");
 
 app.use("/api/v1/customers", customerRoutes);
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/analytics", statsRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({
@@ -50,7 +68,8 @@ const startServer = async () => {
       console.log(`Server is running on port ${PORT}`);
     });
   } catch (error) {
-    console.error("Server startup failed");
+    console.error("Server startup failed:", error.message);
+    console.error("Full error detail:", error);
     process.exit(1);
   }
 };
