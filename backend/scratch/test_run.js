@@ -37,9 +37,11 @@ const request = (path, method, body, token = null) => {
 const runTest = async () => {
   try {
     console.log("--- 1. Registering Admin User ---");
+    const username = `admin_${Date.now()}`;
+    const email = `admin_${Date.now()}@example.com`;
     const reg = await request('/auth/register', 'POST', {
-      username: `admin_${Date.now()}`,
-      email: `admin_${Date.now()}@example.com`,
+      username,
+      email,
       password: "password123",
       role: "ADMIN"
     });
@@ -47,7 +49,7 @@ const runTest = async () => {
 
     console.log("\n--- 2. Logging In ---");
     const login = await request('/auth/login', 'POST', {
-      email: reg.body.data.email,
+      email,
       password: "password123"
     });
     const token = login.body.data.accessToken;

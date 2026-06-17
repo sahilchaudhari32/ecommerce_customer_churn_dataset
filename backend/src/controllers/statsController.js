@@ -4,7 +4,52 @@ const ApiResponse = require("../utils/ApiResponse");
 
 const getOverview = asyncHandler(async (req, res) => {
   const stats = await statsService.getOverviewStats();
-  return res.status(200).json(new ApiResponse(200, stats, "Overview statistics fetched"));
+  return res.status(200).json({ success: true, ...stats });
+});
+
+const getChurnTrend = asyncHandler(async (req, res) => {
+  const trend = await statsService.getMonthlyTrend();
+  return res.status(200).json(trend);
+});
+
+const getChurnByCategory = asyncHandler(async (req, res) => {
+  const data = await statsService.getChurnByCategory();
+  return res.status(200).json(data);
+});
+
+const getChurnByContract = asyncHandler(async (req, res) => {
+  const data = await statsService.getChurnByContract();
+  return res.status(200).json(data);
+});
+
+const getChurnByInternet = asyncHandler(async (req, res) => {
+  const data = await statsService.getChurnByInternet();
+  return res.status(200).json(data);
+});
+
+const getChurnByPayment = asyncHandler(async (req, res) => {
+  const data = await statsService.getChurnByPayment();
+  return res.status(200).json(data);
+});
+
+const getChurnByGender = asyncHandler(async (req, res) => {
+  const data = await statsService.getChurnByGender();
+  return res.status(200).json(data);
+});
+
+const getChargesDistribution = asyncHandler(async (req, res) => {
+  const data = await statsService.getChargesDistribution();
+  return res.status(200).json(data);
+});
+
+const getTopStats = asyncHandler(async (req, res) => {
+  const data = await statsService.getTopStats();
+  return res.status(200).json(data);
+});
+
+const getInsights = asyncHandler(async (req, res) => {
+  const data = await statsService.getInsights();
+  return res.status(200).json(data);
 });
 
 const getFieldDistribution = asyncHandler(async (req, res) => {
@@ -41,6 +86,15 @@ const getRandomProfile = asyncHandler(async (req, res) => {
 
 module.exports = {
   getOverview,
+  getChurnTrend,
+  getChurnByCategory,
+  getChurnByContract,
+  getChurnByInternet,
+  getChurnByPayment,
+  getChurnByGender,
+  getChargesDistribution,
+  getTopStats,
+  getInsights,
   getFieldDistribution,
   getTopPerformers,
   getChurnIntelligence,

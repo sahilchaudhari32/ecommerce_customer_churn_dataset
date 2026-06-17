@@ -26,6 +26,7 @@ const registerUser = asyncHandler(async (req, res) => {
     role: role || "USER",
   });
 
+  const accessToken = user.generateAccessToken();
   const createdUser = await User.findById(user._id).select("-password");
 
   if (!createdUser) {
@@ -34,7 +35,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   return res
     .status(201)
-    .json(new ApiResponse(201, createdUser, "User registered successfully"));
+    .json(new ApiResponse(201, { user: createdUser, accessToken, token: accessToken }, "User registered successfully"));
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -60,7 +61,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const accessToken = user.generateAccessToken();
 
-  const loggedInUser = await User.findById(user._id).select("-password ");
+  const loggedInUser = await User.findById(user._id).select("-password");
 
   return res.status(200).json(
     new ApiResponse(
@@ -68,6 +69,7 @@ const loginUser = asyncHandler(async (req, res) => {
       {
         user: loggedInUser,
         accessToken,
+        token: accessToken,
       },
       "User logged in successfully"
     )
