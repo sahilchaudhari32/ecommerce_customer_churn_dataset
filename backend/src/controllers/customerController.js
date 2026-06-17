@@ -1,5 +1,6 @@
 const customerService = require("../services/customerService");
 const asyncHandler = require("../utils/asyncHandler");
+const ApiError = require("../utils/ApiError");
 const ApiResponse = require("../utils/ApiResponse");
 const { getPaginationOptions, getPaginationMetadata } = require("../utils/pagination");
 const buildCustomerFilter = require("../utils/filterBuilder");
@@ -13,21 +14,41 @@ const createCustomer = asyncHandler(async (req, res) => {
 
 const getAllCustomers = asyncHandler(async (req, res) => {
   const { page, limit, skip, sort } = getPaginationOptions(req.query);
-  
   const filter = buildCustomerFilter(req.query);
 
   const { customers, total } = await customerService.getAllCustomers({
     filter,
+    sort,
     skip,
     limit,
-    sort,
   });
 
-  const metadata = getPaginationMetadata(page, limit, total);
-  
-  return res
-    .status(200)
-    .json(new ApiResponse(200, { customers, pagination: metadata }, "Customers fetched successfully"));
+  // Map to format expected by ChurnDatasetPage.jsx
+  const formattedRecords = customers.map(c => ({
+    ...c._doc,
+    customerID: c._id.toString().substring(0, 10).toUpperCase(),
+    gender: c.gender,
+    seniorCitizen: c.age > 60 ? "Yes" : "No",
+    partner: "Yes", // Mock
+    dependents: "No", // Mock
+    tenure: c.membershipYears,
+    phoneService: "Yes", // Mock
+    multipleLines: "No", // Mock
+    internetService: "Fiber optic", // Mock
+    contract: c.signupQuarter === "Q1" ? "Month-to-month" : "One year", // Mock derived
+    monthlyCharges: c.averageOrderValue,
+    totalCharges: c.lifetimeValue,
+    churn: c.churned ? "Yes" : "No"
+  }));
+
+  return res.status(200).json({
+    success: true,
+    data: formattedRecords,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+    limit,
+  });
 });
 
 const getCustomerById = asyncHandler(async (req, res) => {

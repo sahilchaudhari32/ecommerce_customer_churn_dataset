@@ -17,8 +17,10 @@ const getPaginationOptions = (query) => {
   const skip = (page - 1) * limit;
 
   // Sorting logic
-  const sortBy = query.sortBy || "createdAt";
-  const sortOrder = query.sortOrder === "asc" ? 1 : -1;
+  let sortBy = query.sortBy || query.sort || "createdAt";
+  if (sortBy === "date") sortBy = "createdAt"; // Alias date to createdAt
+  
+  const sortOrder = (query.sortOrder || query.order) === "asc" ? 1 : -1;
   const sort = { [sortBy]: sortOrder };
 
   return { page, limit, skip, sort };

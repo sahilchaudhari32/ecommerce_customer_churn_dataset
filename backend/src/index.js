@@ -1,4 +1,5 @@
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "../.env") });
 
 const express = require("express");
 const cors = require("cors");
@@ -35,10 +36,12 @@ app.use(requestTimeMiddleware);
 const customerRoutes = require("./routes/customerRoutes");
 const authRoutes = require("./routes/authRoutes");
 const statsRoutes = require("./routes/statsRoutes");
+const userRoutes = require("./routes/userRoutes");
 
 app.use("/api/v1/customers", customerRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/analytics", statsRoutes);
+app.use("/api/v1/users", userRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({
