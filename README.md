@@ -1,7 +1,7 @@
 # Ecommerce Customer Churn Dataset API
 
-Documentation: https://documenter.getpostman.com/view/50841270/2sBY4JwNPe
-Backend: https://ecommerce-customer-churn-dataset-1.onrender.com
+- Documentation: https://documenter.getpostman.com/view/50841270/2sBY4JwNPe
+- Backend: https://ecommerce-customer-churn-dataset-1.onrender.com
 
 A comprehensive backend API for managing customer data with advanced filtering, pagination, and bulk operations.
 
