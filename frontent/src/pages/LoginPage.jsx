@@ -2,41 +2,25 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BarChart2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import AuthLeftPanel from '../components/AuthLeftPanel';
+import { useDispatch, useSelector } from 'react-redux';
+import { login } from '../store/authSlice';
 
 // ── Main Login Page ───────────────────────────────────────────────────────────
 const LoginPage = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { loading, error } = useSelector(state => state.auth);
+
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-    
-    try {
-      const res = await fetch('/api/v1/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json();
-      
-      if (res.ok) {
-        localStorage.setItem('token', data.data.accessToken);
-        navigate('/admin/dashboard');
-      } else {
-        setError(data.message || 'Invalid credentials');
-      }
-    } catch (_err) {
-      setError('Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
+    const result = await dispatch(login({ email, password }));
+    if (login.fulfilled.match(result)) {
+      navigate('/admin/dashboard');
     }
   };
 

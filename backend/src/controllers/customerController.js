@@ -23,32 +23,64 @@ const getAllCustomers = asyncHandler(async (req, res) => {
     limit,
   });
 
-  // Map to format expected by ChurnDatasetPage.jsx
-  const formattedRecords = customers.map(c => ({
-    ...c._doc,
-    customerID: c._id.toString().substring(0, 10).toUpperCase(),
-    gender: c.gender,
-    seniorCitizen: c.age > 60 ? "Yes" : "No",
-    partner: "Yes", // Mock
-    dependents: "No", // Mock
-    tenure: c.membershipYears,
-    phoneService: "Yes", // Mock
-    multipleLines: "No", // Mock
-    internetService: "Fiber optic", // Mock
-    contract: c.signupQuarter === "Q1" ? "Month-to-month" : "One year", // Mock derived
-    monthlyCharges: c.averageOrderValue,
-    totalCharges: c.lifetimeValue,
-    churn: c.churned ? "Yes" : "No"
-  }));
+  // Map to format expected by both ChurnDatasetPage.jsx and Dashboard Overview.jsx
+  const formattedRecords = customers.map(c => {
+    const rawData = c._doc || c;
+    const cid = rawData._id.toString();
+    
+    return {
+      ...rawData,
+      id: cid,
+      customerID: cid.substring(cid.length - 10).toUpperCase(),
+      name: `Customer ${cid.substring(cid.length - 4).toUpperCase()}`, // Derived name
+      email: `customer_${cid.substring(cid.length - 6)}@example.com`, // Derived email
+      gender: rawData.gender,
+      seniorCitizen: rawData.age > 60 ? "Yes" : "No",
+      partner: "Yes", // Mock
+      dependents: "No", // Mock
+      tenure: rawData.membershipYears,
+      phoneService: "Yes", // Mock
+      multipleLines: "No", // Mock
+      internetService: "Fiber optic", // Mock
+      contract: rawData.signupQuarter === "Q1" ? "Month-to-month" : "One year", // Mock derived
+      contractType: rawData.signupQuarter === "Q1" ? "Month-to-Month" : "One Year", // Matches Dashboard
+      monthlyCharges: rawData.averageOrderValue,
+      totalCharges: rawData.lifetimeValue,
+      churn: rawData.churned ? "Yes" : "No",
+      churnLabel: rawData.churned ? "Churned" : "Active",
+      date: new Date(rawData.createdAt).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })
+    };
+  });
 
   return res.status(200).json({
     success: true,
     data: formattedRecords,
     total,
     page,
-    totalPages: Math.ceil(total / limit),
+    totalPages: Math.ceil(total / (limit || 10)),
     limit,
   });
+});
+
+const exportCSVCustomers = asyncHandler(async (req, res) => {
+  const filter = buildCustomerFilter(req.query);
+  const { customers } = await customerService.getAllCustomers({
+    filter,
+    limit: 10000, // Export up to 10k records
+  });
+
+  const { Parser } = require("json2csv");
+  const fields = [
+    "gender", "age", "country", "city", "membershipYears", 
+    "totalPurchases", "averageOrderValue", "lifetimeValue", 
+    "churned", "signupQuarter"
+  ];
+  const json2csvParser = new Parser({ fields });
+  const csv = json2csvParser.parse(customers);
+
+  res.header("Content-Type", "text/csv");
+  res.attachment("customers_export.csv");
+  return res.send(csv);
 });
 
 const getCustomerById = asyncHandler(async (req, res) => {
@@ -153,6 +185,36 @@ const getCustomersBySegment = asyncHandler(async (req, res) => {
       break;
     case 'risky':
       filter = { cartAbandonmentRate: { $gte: 50 }, loginFrequency: { $lt: 5 } };
+      break;
+    case 'high-purchases':
+      filter = { totalPurchases: { $gt: 50 } };
+      break;
+    case 'high-credit':
+      filter = { creditBalance: { $gt: 100 } };
+      break;
+    case 'high-engagement':
+      filter = { socialMediaEngagementScore: { $gte: 70 } };
+      break;
+    case 'high-mobile-usage':
+      filter = { mobileAppUsage: { $gt: 5 } };
+      break;
+    case 'high-discount-users':
+      filter = { discountUsageRate: { $gt: 10 } };
+      break;
+    case 'recent-buyers':
+      filter = { daysSinceLastPurchase: { $lte: 30 } };
+      break;
+    case 'inactive':
+      filter = { churned: true, loginFrequency: { $lt: 5 } };
+      break;
+    case 'top-reviewers':
+      filter = { productReviewsWritten: { $gte: 5 } };
+      break;
+    case 'high-cart-abandonment':
+      filter = { cartAbandonmentRate: { $gte: 50 } };
+      break;
+    case 'frequent-logins':
+      filter = { loginFrequency: { $gte: 20 } };
       break;
     default:
       throw new ApiError(400, "Invalid segment type");
@@ -272,6 +334,12 @@ const getFilteredCustomers = asyncHandler(async (req, res) => {
     case 'high-order-value':
       filter.averageOrderValue = { $gt: 200 };
       break;
+    case 'high-purchases':
+      filter.totalPurchases = { $gt: 50 };
+      break;
+    case 'high-credit':
+      filter.creditBalance = { $gt: 100 };
+      break;
     case 'loyal':
       filter.membershipYears = { $gte: 3 };
       break;
@@ -279,7 +347,27 @@ const getFilteredCustomers = asyncHandler(async (req, res) => {
       filter.churned = false;
       break;
     case 'engaged':
+    case 'high-engagement':
       filter.socialMediaEngagementScore = { $gte: 70 };
+      break;
+    case 'high-mobile-usage':
+      filter.mobileAppUsage = { $gt: 5 };
+      break;
+    case 'high-discount-users':
+      filter.discountUsageRate = { $gt: 10 };
+      break;
+    case 'inactive':
+      filter.churned = true;
+      filter.loginFrequency = { $lt: 5 };
+      break;
+    case 'top-reviewers':
+      filter.productReviewsWritten = { $gte: 5 };
+      break;
+    case 'high-cart-abandonment':
+      filter.cartAbandonmentRate = { $gte: 50 };
+      break;
+    case 'frequent-logins':
+      filter.loginFrequency = { $gte: 20 };
       break;
     default:
       throw new ApiError(400, "Invalid filter type");
@@ -315,4 +403,5 @@ module.exports = {
   getSortedCustomers,
   searchCustomers,
   getFilteredCustomers,
+  exportCSVCustomers,
 };

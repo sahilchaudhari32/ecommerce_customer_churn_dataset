@@ -14,6 +14,11 @@ const connectDB = async () => {
 
     console.log(`MongoDB connected: ${connection.connection.host}`);
   } catch (error) {
+    if (error.name === "MongooseServerSelectionError") {
+      console.error("❌ MongoDB Connection Error: Server Selection Failed.");
+      console.error("👉 Common cause: Your IP address might not be whitelisted in MongoDB Atlas.");
+      console.error("👉 Action: Check your Atlas 'Network Access' settings and add your current IP.");
+    }
     console.error(`MongoDB connection failed: ${error.message}`);
     throw error;
   }

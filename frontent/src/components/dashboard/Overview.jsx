@@ -51,6 +51,7 @@ const InsightItem = ({ label, stat, desc, icon: Icon, colorBg, colorText }) => (
 const Overview = () => {
   const dispatch = useDispatch();
   const { overview, monthlyTrend, byCategory, topStats, recentChurned, loading } = useSelector(state => state.dashboard);
+  const { user } = useSelector(state => state.auth);
 
   useEffect(() => {
     dispatch(fetchDashboard());
@@ -80,7 +81,7 @@ const Overview = () => {
           <div className="space-y-6 text-center md:text-left">
             <div>
               <h2 className="text-3xl font-extrabold flex items-center gap-3">
-                Good morning, John Doe <span className="animate-bounce">👋</span>
+                Good morning, {user?.username || 'User'} <span className="animate-bounce">👋</span>
               </h2>
               <p className="text-blue-100 mt-2 text-lg">Here's your churn analytics overview for today.</p>
             </div>
@@ -205,7 +206,7 @@ const Overview = () => {
                     nameKey="category"
                     strokeWidth={0}
                   >
-                    {byCategory?.map((entry, index) => (
+                    {(Array.isArray(byCategory) ? byCategory : []).map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -219,7 +220,7 @@ const Overview = () => {
             </div>
             
             <div className="mt-8 grid grid-cols-2 gap-3 w-full">
-              {byCategory?.slice(0, 4).map((item, idx) => (
+              {(Array.isArray(byCategory) ? byCategory : []).slice(0, 4).map((item, idx) => (
                 <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-100">
                   <div className="flex items-center gap-2 overflow-hidden">
                     <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
@@ -254,7 +255,7 @@ const Overview = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {(recentChurned || []).map((row, idx) => (
+                {(Array.isArray(recentChurned) ? recentChurned : []).map((row, idx) => (
                   <tr key={idx} className="hover:bg-gray-50 transition-colors group">
                     <td className="px-4 py-4 text-sm font-bold text-gray-900">{row.name}</td>
                     <td className="px-4 py-4 text-sm text-gray-500">{row.email}</td>

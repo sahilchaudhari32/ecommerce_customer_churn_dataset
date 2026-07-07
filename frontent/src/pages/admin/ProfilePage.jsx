@@ -5,6 +5,8 @@ import {
   Trash2, AlertTriangle, X, ShieldAlert, MapPin, Phone,
   User, Mail, ArrowLeft, MoreHorizontal, CheckCircle
 } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchProfile, updateProfile, changePassword as changePasswordThunk } from '../../store/authSlice';
 
 // ── Components ───────────────────────────────────────────────────────────────
 
@@ -85,20 +87,24 @@ const SectionHeader = ({ label, subLabel, badge }) => (
   </div>
 );
 
-const FormField = ({ label, value, type = "text", disabled = true, fullWidth = false }) => (
+const FormField = ({ label, value, name, onChange, type = "text", disabled = true, fullWidth = false }) => (
   <div className={fullWidth ? "col-span-full" : "col-span-1"}>
     <label className="block text-sm font-bold text-gray-700 mb-2">{label}</label>
     {type === "textarea" ? (
       <textarea
-        defaultValue={value}
+        name={name}
+        value={value}
+        onChange={onChange}
         disabled={disabled}
         className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-none ${disabled ? 'bg-gray-50 text-gray-500' : 'bg-white'}`}
         rows={3}
       />
     ) : (
       <input
+        name={name}
         type={type}
-        defaultValue={value}
+        value={value}
+        onChange={onChange}
         disabled={disabled}
         className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all ${disabled ? 'bg-gray-50 text-gray-500' : 'bg-white'}`}
       />
@@ -109,9 +115,77 @@ const FormField = ({ label, value, type = "text", disabled = true, fullWidth = f
 // ── Main Page ───────────────────────────────────────────────────────────────
 
 const ProfilePage = () => {
+  const dispatch = useDispatch();
+  const { user, loading } = useSelector(state => state.auth);
+  
   const [isEditing, setIsEditing] = useState(false);
-  const [password, setPassword] = useState('••••••••••');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    phone: '',
+    location: '',
+    bio: ''
+  });
+  const [passwords, setPasswords] = useState({
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  useEffect(() => {
+    dispatch(fetchProfile());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        username: user.username || '',
+        email: user.email || '',
+        phone: user.phone || '+1 (555) 000-0000',
+        location: user.location || 'Not Specified',
+        bio: user.bio || 'Enter your bio here...'
+      });
+    }
+  }, [user]);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handlePasswordChangeInput = (e) => {
+    setPasswords({ ...passwords, [e.target.name]: e.target.value });
+  };
+
+  const handleSaveProfile = async () => {
+    const result = await dispatch(updateProfile({
+      username: formData.username,
+      email: formData.email
+    }));
+    if (updateProfile.fulfilled.match(result)) {
+      setIsEditing(false);
+      alert('Profile updated successfully!');
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+    const result = await dispatch(changePasswordThunk({
+      oldPassword: passwords.oldPassword,
+      newPassword: passwords.newPassword
+    }));
+    if (changePasswordThunk.fulfilled.match(result)) {
+      setPasswords({ oldPassword: '', newPassword: '', confirmPassword: '' });
+      alert('Password updated successfully!');
+    } else {
+      alert(result.payload || 'Failed to update password');
+    }
+  };
+
+  if (!user) return <div className="p-10 text-center font-bold">Loading user profile...</div>;
 
   return (
     <div className="max-w-[1200px] mx-auto space-y-8 pb-12">
@@ -130,7 +204,7 @@ const ProfilePage = () => {
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <div className="w-[110px] h-[110px] rounded-full bg-[#7C3AED] flex items-center justify-center text-white text-4xl font-extrabold shadow-xl">
-                JD
+                {formData.username?.substring(0, 2).toUpperCase() || 'JD'}
               </div>
               <button className="absolute bottom-1 right-1 p-2 bg-[#2D5BFF] text-white rounded-full border-4 border-white shadow-lg hover:scale-110 transition-transform">
                 <Camera size={16} />
@@ -146,15 +220,15 @@ const ProfilePage = () => {
           </div>
 
           <div className="flex-1 space-y-3 text-center md:text-left">
-            <h2 className="text-3xl font-black text-gray-900">John Doe</h2>
-            <p className="text-gray-500 font-medium">john.doe@example.com</p>
+            <h2 className="text-3xl font-black text-gray-900">{formData.username}</h2>
+            <p className="text-gray-500 font-medium">{formData.email}</p>
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
               <span className="bg-[#EDE9FE] text-[#7C3AED] px-4 py-1.5 rounded-full text-[13px] font-bold">
-                Admin
+                {user.role}
               </span>
               <div className="flex items-center gap-2 text-gray-400 text-sm">
                 <Calendar size={16} />
-                Member since May 24, 2024
+                Member since {new Date(user.createdAt).toLocaleDateString()}
               </div>
             </div>
           </div>
@@ -175,35 +249,41 @@ const ProfilePage = () => {
       <section>
         <SectionHeader 
           label="2. Personal Information" 
-          badge="Click 'Edit Profile' above to update your information"
+          badge={isEditing ? "Modify your details and click save" : "Click 'Edit Profile' above to update your information"}
         />
         <div className="bg-white rounded-[20px] p-8 shadow-sm border border-gray-100">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-            <FormField label="Full Name" value="John Doe" disabled={!isEditing} />
-            <FormField label="Email" value="john.doe@example.com" disabled={!isEditing} />
-            <FormField label="Phone Number (Optional)" value="+1 (555) 123-4567" disabled={!isEditing} />
-            <FormField label="Location (Optional)" value="New York, USA" disabled={!isEditing} />
+            <FormField label="Full Name" name="username" value={formData.username} onChange={handleChange} disabled={!isEditing} />
+            <FormField label="Email" name="email" value={formData.email} onChange={handleChange} disabled={!isEditing} />
+            <FormField label="Phone Number (Optional)" name="phone" value={formData.phone} onChange={handleChange} disabled={!isEditing} />
+            <FormField label="Location (Optional)" name="location" value={formData.location} onChange={handleChange} disabled={!isEditing} />
             <div className="col-span-full">
               <div className="flex justify-between items-center mb-2">
                 <label className="text-sm font-bold text-gray-700">Bio / About (Max 200 characters)</label>
-                <span className="text-xs text-gray-400">89 / 200</span>
+                <span className="text-xs text-gray-400">{formData.bio.length} / 200</span>
               </div>
               <textarea
+                name="bio"
+                value={formData.bio}
+                onChange={handleChange}
                 disabled={!isEditing}
                 className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-none ${!isEditing ? 'bg-gray-50 text-gray-500' : 'bg-white'}`}
                 rows={3}
-                defaultValue="E-commerce analytics enthusiast. Passionate about data-driven insights and customer experience."
               />
             </div>
           </div>
           <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-gray-50">
-            <button className="px-6 py-2.5 text-sm font-bold text-gray-600 hover:text-gray-900 transition-colors">
-              Cancel
-            </button>
-            <button className="flex items-center gap-2 px-6 py-2.5 bg-[#2D5BFF] text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
-              <Save size={18} />
-              Save Changes
-            </button>
+            {isEditing && (
+              <>
+                <button onClick={() => setIsEditing(false)} className="px-6 py-2.5 text-sm font-bold text-gray-600 hover:text-gray-900 transition-colors">
+                  Cancel
+                </button>
+                <button onClick={handleSaveProfile} disabled={loading} className="flex items-center gap-2 px-6 py-2.5 bg-[#2D5BFF] text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
+                  <Save size={18} />
+                  {loading ? 'Saving...' : 'Save Changes'}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -215,33 +295,31 @@ const ProfilePage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">Current Password</label>
-              <input type="password" value="••••••••••" readOnly className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" />
+              <input type="password" name="oldPassword" placeholder="Current Password" value={passwords.oldPassword} onChange={handlePasswordChangeInput} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none" />
             </div>
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">New Password</label>
-              <input type="password" placeholder="Enter new password" onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none" />
-              <div className="mt-4 space-y-2">
-                <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full w-[80%] bg-green-500 transition-all duration-500"></div>
+              <input type="password" name="newPassword" placeholder="Enter new password" value={passwords.newPassword} onChange={handlePasswordChangeInput} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none" />
+              {passwords.newPassword && (
+                <div className="mt-4 space-y-2">
+                  <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-green-500 transition-all duration-500" 
+                      style={{ width: passwords.newPassword.length > 8 ? '100%' : '50%' }}
+                    ></div>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-green-600">Strong</span>
-                  <span className="text-[11px] text-green-500 flex items-center gap-1">
-                    <CheckCircle size={12} />
-                    Password looks strong!
-                  </span>
-                </div>
-              </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">Confirm New Password</label>
-              <input type="password" placeholder="Confirm new password" className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none" />
+              <input type="password" name="confirmPassword" placeholder="Confirm new password" value={passwords.confirmPassword} onChange={handlePasswordChangeInput} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none" />
             </div>
           </div>
           <div className="flex justify-end pt-6 border-t border-gray-50">
-            <button className="flex items-center gap-2 px-6 py-2.5 bg-[#2D5BFF] text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
+            <button onClick={handleUpdatePassword} disabled={loading} className="flex items-center gap-2 px-6 py-2.5 bg-[#2D5BFF] text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
               <Lock size={18} />
-              Update Password
+              {loading ? 'Updating...' : 'Update Password'}
             </button>
           </div>
         </div>
@@ -254,31 +332,21 @@ const ProfilePage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 py-5">
             <div className="flex justify-between items-center py-2">
               <span className="text-sm font-bold text-gray-900">User ID</span>
-              <code className="text-sm text-gray-500 font-mono tracking-tighter">665f8c8d9e0b2d1f4a7c6d91</code>
+              <code className="text-sm text-gray-500 font-mono tracking-tighter">{user.id}</code>
             </div>
             <div className="flex justify-between items-center py-2">
               <span className="text-sm font-bold text-gray-900">Account Created</span>
-              <span className="text-sm text-gray-500">May 24, 2024 08:42 AM (IST)</span>
+              <span className="text-sm text-gray-500">{new Date(user.createdAt).toLocaleString()}</span>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 py-5">
-            <div className="flex justify-between items-center py-2">
-              <span className="text-sm font-bold text-gray-900">Last Login</span>
-              <span className="text-sm text-gray-500">May 24, 2024 09:15 AM (IST)</span>
-            </div>
             <div className="flex justify-between items-center py-2">
               <span className="text-sm font-bold text-gray-900">Account Role</span>
-              <span className="bg-[#EDE9FE] text-[#7C3AED] px-3 py-1 rounded-full text-[11px] font-bold">Admin</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 py-5">
-            <div className="flex justify-between items-center py-2">
-              <span className="text-sm font-bold text-gray-900">Account Status</span>
-              <span className="bg-green-50 text-green-600 px-3 py-1 rounded-full text-[11px] font-bold">Active</span>
+              <span className="bg-[#EDE9FE] text-[#7C3AED] px-3 py-1 rounded-full text-[11px] font-bold">{user.role}</span>
             </div>
             <div className="flex justify-between items-center py-2">
               <span className="text-sm font-bold text-gray-900">Email</span>
-              <span className="text-sm text-gray-500">john.doe@example.com</span>
+              <span className="text-sm text-gray-500">{user.email}</span>
             </div>
           </div>
         </div>
@@ -311,7 +379,7 @@ const ProfilePage = () => {
       {/* 10. Footer */}
       <footer className="pt-12 text-center">
         <p className="text-[12px] text-gray-400 font-medium tracking-tight">
-          © 2024 CustomerPulse AI. All rights reserved.
+          © 2026 CustomerPulse AI. All rights reserved.
         </p>
       </footer>
 

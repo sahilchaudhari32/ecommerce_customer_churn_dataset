@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Users, Database, BarChart2,
   Settings, LogOut, TrendingUp, Waves
 } from 'lucide-react';
+import { logout } from '../../store/authSlice';
 
 const NAV = [
   { to: '/admin/dashboard',  label: 'Dashboard',   Icon: LayoutDashboard },
@@ -16,10 +18,12 @@ const NAV = [
 
 const Sidebar = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { user } = useSelector(state => state.auth);
   const [hoveredLogout, setHoveredLogout] = useState(false);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    dispatch(logout());
     navigate('/login');
   };
 
@@ -89,15 +93,15 @@ const Sidebar = () => {
             fontSize: 14, fontWeight: 700, flexShrink: 0,
             border: '2px solid rgba(255,255,255,0.1)'
           }}>
-            JD
+            {user?.username?.substring(0, 2).toUpperCase() || 'U'}
           </div>
           <div style={{ overflow: 'hidden' }}>
-            <div style={{ color: '#fff', fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>John Doe</div>
+            <div style={{ color: '#fff', fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.username || 'User'}</div>
             <div style={{ 
               background: '#2D5BFF', color: '#fff', fontSize: 9, 
               padding: '1px 6px', borderRadius: 100, display: 'inline-block',
               marginTop: 2, fontWeight: 600
-            }}>Admin</div>
+            }}>{user?.role || 'User'}</div>
           </div>
         </div>
         <button

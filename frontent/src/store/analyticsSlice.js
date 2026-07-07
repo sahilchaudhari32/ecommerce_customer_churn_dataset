@@ -173,18 +173,36 @@ const analyticsSlice = createSlice({
       state.loading.overview = false;
       state.overview = action.payload;
     });
-    builder.addCase(fetchOverview.rejected, (state, action) => {
-      state.loading.overview = false;
-      state.error = action.error.message;
-    });
     // Trend
     builder.addCase(fetchChurnTrend.pending, (state) => { state.loading.trend = true; });
     builder.addCase(fetchChurnTrend.fulfilled, (state, action) => {
       state.loading.trend = false;
       state.churnTrend = action.payload;
     });
-    // Add other cases as needed...
-    // Simplified for now, we can add more if specific logic is needed per case
+    // Contract
+    builder.addCase(fetchByContract.fulfilled, (state, action) => {
+      state.byContract = action.payload;
+    });
+    // Internet
+    builder.addCase(fetchByInternet.fulfilled, (state, action) => {
+      state.byInternet = action.payload;
+    });
+    // Payment
+    builder.addCase(fetchByPayment.fulfilled, (state, action) => {
+      state.byPayment = action.payload;
+    });
+    // Gender
+    builder.addCase(fetchByGender.fulfilled, (state, action) => {
+      state.byGender = action.payload;
+    });
+    // Charges Distribution
+    builder.addCase(fetchChargesDistribution.fulfilled, (state, action) => {
+      state.chargesDistribution = action.payload;
+    });
+    // Insights
+    builder.addCase(fetchInsights.fulfilled, (state, action) => {
+      state.insights = action.payload;
+    });
   }
 });
 

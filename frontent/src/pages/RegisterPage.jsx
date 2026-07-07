@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BarChart2, Mail, Lock, Eye, EyeOff, User, ShieldCheck, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import AuthLeftPanel from '../components/AuthLeftPanel';
+import { useDispatch, useSelector } from 'react-redux';
+import { register, clearError } from '../store/authSlice';
 
 // ── Password strength ──────────────────────────────────────────────────────────
 const getStrength = (pw) => {
@@ -60,15 +62,15 @@ const Field = ({ label, type = 'text', value, onChange, placeholder, icon: Icon,
 
 // ── RegisterPage ───────────────────────────────────────────────────────────────
 const RegisterPage = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { loading, error: apiError } = useSelector(state => state.auth);
 
   const [form, setForm] = useState({ name:'', email:'', password:'', confirm:'' });
   const [errors, setErrors] = useState({});
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [agreed, setAgreed] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [apiError, setApiError] = useState('');
   const [toast, setToast] = useState({ visible:false, message:'', type:'success' });
 
   const strength = getStrength(form.password);
@@ -94,28 +96,21 @@ const RegisterPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setApiError('');
+    dispatch(clearError());
     if (!validate()) return;
-    setLoading(true);
-    try {
-      const res = await fetch('/api/v1/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: form.name, email: form.email, password: form.password, role: 'USER' })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        showToast('Account created! Please sign in to continue.', 'success');
-        setTimeout(() => navigate('/login'), 1500);
-      } else if (res.status === 409) {
-        setApiError('An account with this email already exists. Sign in instead.');
-      } else {
-        showToast(data.message || 'Something went wrong. Please try again.', 'error');
-      }
-    } catch {
-      showToast('Something went wrong. Please try again.', 'error');
-    } finally {
-      setLoading(false);
+    
+    const result = await dispatch(register({ 
+      username: form.name, 
+      email: form.email, 
+      password: form.password, 
+      role: 'USER' 
+    }));
+
+    if (register.fulfilled.match(result)) {
+      showToast('Account created successfully!', 'success');
+      setTimeout(() => navigate('/admin/dashboard'), 1500);
+    } else {
+      showToast(result.payload || 'Registration failed', 'error');
     }
   };
 

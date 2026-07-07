@@ -207,7 +207,7 @@ const SettingsPage = () => {
           
           <div className="relative mt-2">
             <img 
-              src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" 
+              src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLZvJYRB4BPZLned24jgEZ9yORnap0pX5PGNCjFFQdEBuV2ynlr0xZrS0&s=10" 
               alt="Admin"
               className="w-24 h-24 rounded-full border-4 border-white shadow-md"
             />

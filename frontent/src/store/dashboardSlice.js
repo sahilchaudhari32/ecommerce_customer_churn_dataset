@@ -67,7 +67,15 @@ export const fetchDashboard = createAsyncThunk('dashboard/fetchAll', async (_, {
     safeGet('/analytics/top-stats', MOCK.topStats),
     safeGet('/customers?limit=5&sort=date&order=desc', MOCK.recentChurned),
   ]);
-  return { overview, monthlyTrend, byCategory, byContract, byInternet, topStats, recentChurned };
+  return { 
+    overview, 
+    monthlyTrend, 
+    byCategory, 
+    byContract, 
+    byInternet, 
+    topStats, 
+    recentChurned: recentChurned?.data || recentChurned 
+  };
 });
 
 // ── Slice ────────────────────────────────────────────────────────────────────

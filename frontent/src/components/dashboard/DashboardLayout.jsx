@@ -1,10 +1,23 @@
-import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchProfile } from '../../store/authSlice';
 import Sidebar from './Sidebar';
 import DashboardNavbar from './DashboardNavbar';
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, token } = useSelector(state => state.auth);
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/login');
+    } else if (!user) {
+      dispatch(fetchProfile());
+    }
+  }, [dispatch, token, user, navigate]);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#F5F6FA' }}>
