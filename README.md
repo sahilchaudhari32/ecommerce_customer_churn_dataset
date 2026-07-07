@@ -1,5 +1,7 @@
 # Ecommerce Customer Churn Dataset API
 
+Documentation: https://documenter.getpostman.com/view/50841270/2sBY4JwNPe
+
 A comprehensive backend API for managing customer data with advanced filtering, pagination, and bulk operations.
 
 ## Features
